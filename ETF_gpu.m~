@@ -1,0 +1,34 @@
+%% ETF on GPU
+function [tx_new, ty_new, tmag] = ETF_gpu(tx,ty,gmag_norm,im,kern)
+
+% set kernel file to be loaded
+% cudaFilename = '/home/bee/TRY/kernel.cu';
+% ptxFilename = '/home/bee/TRY/kernel.ptx';
+cudaFilename = '/home/bee/TRY/etfStraight.cu';
+ptxFilename = '/home/bee/TRY/etfStraight.ptx';
+kernel = parallel.gpu.CUDAKernel(ptxFilename, cudaFilename);
+
+% host to device memcpy
+[r,c] = size(im);
+im = gpuArray(im)';
+gmag = gpuArray(gmag_norm)';
+tmag = zeros(size(gmag),'gpuArray');
+tx = gpuArray(tx)';
+ty = gpuArray(ty)';
+tx_new = zeros(size(tx),'gpuArray');
+ty_new = zeros(size(tx),'gpuArray');
+
+% initialize kernel dimensions
+blockDim_x = ceil(c/32);
+blockDim_y = ceil(r/32);
+kernel.ThreadBlockSize = [32,32,1];
+kernel.GridSize = [blockDim_x,blockDim_y,1];
+
+% kernel function call
+[tx_new, ty_new, tmag] = feval(kernel, tx_new,ty_new,tmag, tx,ty,im,gmag,r,c);
+
+% device to host memcpy
+tx_new = gather(tx_new);
+ty_new = gather(ty_new);
+
+

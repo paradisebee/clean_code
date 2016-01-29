@@ -1,0 +1,70 @@
+function [s,radius] = ctrlin_trace(im, tx, ty, startP, endP, stepSize, width, flag)
+
+% store centerline points
+s = [];
+radius = [];
+
+tx = flag*tx;
+ty = flag*ty;
+
+ctrp = startP;
+ctr_tx = tx(startP(1),startP(2));
+ctr_ty = ty(startP(1),startP(2));
+
+
+% preset parameters for error check
+tmp_dist = sqrt(sum((endP-startP).^2));
+hysteresis_dist = [];
+hysteresis_radius = 0;
+
+% start main loop
+while (1)
+	% correct center point position 
+	[new_ctr, rads] = center_pts(im, ctrp, ctr_tx, ctr_ty, width, hysteresis_radius);
+	% add to centerline
+	s = [s; new_ctr];
+    radius = [radius; rads];
+    hysteresis_radius = rads;
+	% get the next center point candidate
+	rded_ctr = round(new_ctr);
+    
+    tic
+    [ctr_tx, ctr_ty] = sm_ETFstraight(im, tx, ty, rded_ctr, 9);
+    toc
+    direction = [ctr_tx, ctr_ty];
+% 	direction = [tx(rded_ctr(1),rded_ctr(2)), ty(rded_ctr(1),rded_ctr(2))];
+	ctrp = [new_ctr(1) + direction(2)*stepSize, new_ctr(2) + direction(1)*stepSize];
+	xyctrp = round(ctrp);
+	% get center point direction	
+	ctr_tx = tx(xyctrp(1),xyctrp(2));
+	ctr_ty = ty(xyctrp(1),xyctrp(2));
+	% stopping criterion: stop when extracted center point meets the end point
+	Pdist = sqrt(sum((ctrp-endP).^2));
+	if Pdist<=stepSize
+        s = [s; endP];
+        radius = [radius; hysteresis_radius];
+		break;
+	end
+
+	% error check: constrain the distance change
+	if Pdist < tmp_dist
+		tmp_dist = Pdist;
+		hysteresis_dist = [];
+	else
+		hysteresis_dist = [hysteresis_dist, Pdist];
+		if length(hysteresis_dist) == 3
+			[~, pos] = min(hysteresis_dist);
+			if pos == 1
+				% delete the newly included centerline points
+				s(end-2:end,:) = [];
+				disp('The tracing process ends prematurely.');
+				break;
+			else
+				hysteresis_dist(1) = [];
+			end
+		end
+	end
+		
+
+end
+
