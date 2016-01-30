@@ -29,8 +29,10 @@ for i = 1:size(I,3)
     
     tic
 %     [tx_new1, ty_new1, tmag_new] = ETF(tx,ty,gmag_norm,img);
-%     [tx_new1, ty_new1, tmag_new] = ETF(tx_new1,ty_new1,gmag_norm,img);
-%     [r_tx,r_ty,score] = ETFstraight(false, 0, tx,ty,img);
+% %     [tx_new1, ty_new1, tmag_new] = ETF(tx_new1,ty_new1,gmag_norm,img);
+%     [r_tx,r_ty,score] = ETFstraight(false, 0, tx_new1,ty_new1,img);
+%     [r_tx,r_ty,score] = ETFstraight(false, 0, r_tx,r_ty,img);
+%     [r_tx,r_ty,score] = ETFCross(tx_new1,ty_new1,img);
     cpu_t = toc
 %     figure
 %     imshow(img,[])
@@ -38,8 +40,11 @@ for i = 1:size(I,3)
 %     quiver(r_tx,r_ty);
     
     tic
-    [tx_new2, ty_new2, tmag] = ETF_gpu(tx,ty,gmag_norm,img);
-    [tx_new2, ty_new2, tmag] = ETF_gpu(tx_new2',ty_new2',gmag_norm,img);
+    [tx_new2, ty_new2, tmag1] = ETF_gpu(tx,ty,gmag_norm,img,'etfOriginal');
+%     [tx_new2, ty_new2, tmag2] = ETF_gpu(tx_new2',ty_new2',gmag_norm,img,'etfOriginal');
+    [tx_new2, ty_new2, tmag3] = ETF_gpu(tx_new2',ty_new2',gmag_norm,img,'etfStraight');
+%     [tx_new2, ty_new2, tmag4] = ETF_gpu(tx_new2',ty_new2',gmag_norm,img,'etfStraight');
+%     [tx_new2, ty_new2, tmag5] = ETF_gpu(tx_new2',ty_new2',gmag_norm,img,'etfStraight');
     tx_new2 = tx_new2';
     ty_new2 = ty_new2';
     gpu_t = toc
@@ -47,7 +52,7 @@ for i = 1:size(I,3)
     imshow(img,[])
     hold on
     quiver(tx_new2,ty_new2);
-%     speed_t = cpu_t/gpu_t
+    speed_t = cpu_t/gpu_t
     
 %     [tx_new, ty_new, tmag_new] = ETF(tx_new,ty_new,gmag_norm,img);
 %     [R_combined, R_theta, rmask] = detect_lines_ETF(tx,ty, pmask, cmask, w, max_L, thres, sigma);
